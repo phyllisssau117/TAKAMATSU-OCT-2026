@@ -173,7 +173,7 @@
 
     .btn-icon:disabled { color: #ccc; cursor: not-allowed; }
 
-    /* 通用卡片容器 (加大留白與空白格) */
+    /* 通用卡片容器 */
     .card {
       background: var(--card-bg);
       border-radius: 20px;
@@ -296,7 +296,6 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
 
-    /* 照片上載（拉高框格高度） */
     .upload-box {
       border: 2px dashed var(--border-color);
       border-radius: 16px;
@@ -439,7 +438,6 @@
       transition: all 0.2s;
     }
 
-    /* 當前選中：雙層立體膠囊按鈕 */
     .day-tab.active {
       background: var(--primary);
       color: #fff;
@@ -553,7 +551,6 @@
       font-weight: 700;
     }
 
-    /* 攻略與預約粗體亮顯標籤 */
     .tag-food { background: #fde8e8; color: #c0392b; }
     .tag-menu { background: #fef9e7; color: #d35400; }
     .tag-souvenir { background: #eafaf1; color: #27ae60; }
@@ -630,7 +627,6 @@
       margin-right: 8px;
     }
 
-    /* 右下角浮動加號按鈕 (FAB) */
     .fab {
       position: fixed;
       bottom: 24px;
@@ -649,7 +645,6 @@
       z-index: 99;
     }
 
-    /* Modal 彈出視窗 */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -806,7 +801,7 @@
         </div>
       </div>
 
-      <!-- 一週天氣預報 (使用標準天氣圖案) -->
+      <!-- 一週天氣預報 -->
       <div class="card">
         <div class="card-title"><span class="material-symbols-outlined">wb_sunny</span> 一週天氣預報 (高松)</div>
         <div class="weather-scroll">
@@ -1013,7 +1008,7 @@
 
       <div class="form-group">
         <label>重要提醒 / 攻略</label>
-        <input type="text" id="form-sch-highlights" class="form-control" placeholder="用逗號分隔，例如: 【必吃美食】醬油拉麵, 【重要預約】12:00">
+        <input type="text" id="form-sch-highlights" class="form-control" placeholder="用逗號分隔，例如: 【必吃美食】醬油拉麵, 【重要預約代號】12:00">
       </div>
 
       <div class="form-group">
@@ -1094,29 +1089,10 @@
   </div>
 
   <script>
-    // 應用程式狀態全域變數
-    let appState = {
-      theme: 'dusty-rose',
-      currentTab: 'dashboard',
-      currentDay: 1,
-      isSortMode: false,
-      subMode: 'vjw',
-      flightIdx: 0,
-      vjwPhoto: null,
-      drivePhoto: null,
-      drivePos: '',
-      schedules: {},
-      hotels: [],
-      expenses: []
-    };
-
-    let historyStack = [];
-    let historyIdx = -1;
-
-    // Day 1 ~ Day 7 行程資料庫 (自動整合景點故事、攻略與粗體亮顯標籤)
+    // 預設完整的 Day 1 至 Day 7 全部行程資料庫
     const defaultSchedules = {
       1: [
-        { id: '1-1', cat: '交通', timeStart: '09:45', timeEnd: '11:10', title: 'JL477，抵達高松，取車', location: '高松機場', mapcode: '', highlights: ['【重要預約】JL477 班機領車'], notes: '抵達高松機場後辦理入境與租車領取手續' },
+        { id: '1-1', cat: '交通', timeStart: '09:45', timeEnd: '11:10', title: 'JL477，抵達高松，取車', location: '高松機場', mapcode: '', highlights: ['【重要預約代號】JL477 班機領車'], notes: '抵達高松機場後辦理入境與租車領取手續' },
         { id: '1-2', cat: '交通', timeStart: '12:30', timeEnd: '13:00', title: '高松機場 → ヤドン公園駐車場', location: 'ヤドン公園駐車場', mapcode: '228 877 247*20', highlights: [], notes: '📍地址：〒761-2304 香川県綾歌郡綾川町萱原253-7（小羽毛池跡）\n📞電話：+81 878-76-5280' },
         { id: '1-3', cat: '景點', timeStart: '13:00', timeEnd: '13:30', title: '呆呆獸公園（通称「ヤドン公園」）', location: 'ヤドン公園', mapcode: '', highlights: ['【必買伴手禮】呆呆獸香川限定周邊'], notes: '寶可夢香川縣主題公園，擁有巨大呆呆獸造型滑梯與豐富造景設施' },
         { id: '1-4', cat: '交通', timeStart: '13:30', timeEnd: '14:00', title: '金刀比羅宮 Nice Parking', location: '金刀比羅宮 Nice Parking', mapcode: '77 353 864*26', highlights: [], notes: '📍地址：〒766-0001 香川県仲多度郡琴平町川西７４５−１\n📞電話：+81 087-885-0114' },
@@ -1199,18 +1175,41 @@
       { id: 'e-3', name: '小豆島拉麵午餐', cat: '美食', amount: 2400 }
     ];
 
+    let appState = {
+      theme: 'dusty-rose',
+      currentTab: 'dashboard',
+      currentDay: 1,
+      isSortMode: false,
+      subMode: 'vjw',
+      flightIdx: 0,
+      vjwPhoto: null,
+      drivePhoto: null,
+      drivePos: '',
+      schedules: {},
+      hotels: [],
+      expenses: []
+    };
+
+    let historyStack = [];
+    let historyIdx = -1;
+
     document.addEventListener('DOMContentLoaded', () => {
       loadLocalStorage();
       pushHistory();
       renderAll();
     });
 
-    // LocalStorage 完全持久化與初始化優先載入
+    // 智能 LocalStorage 讀取（自動檢查並填補空白行程）
     function loadLocalStorage() {
       const saved = localStorage.getItem('takamatsu_app_state');
       if (saved) {
-        try { appState = JSON.parse(saved); } catch(e) {}
-      } else {
+        try { 
+          appState = JSON.parse(saved); 
+        } catch(e) {}
+      }
+      
+      // 檢查是否缺乏行程資料，若缺乏則自動匯入預設行程
+      if (!appState.schedules || Object.keys(appState.schedules).length === 0 || !appState.schedules[1] || appState.schedules[1].length === 0) {
         appState.schedules = defaultSchedules;
         appState.hotels = defaultHotels;
         appState.expenses = defaultExpenses;
@@ -1223,7 +1222,6 @@
       if (recordHistory) pushHistory();
     }
 
-    // Undo / Redo 歷史堆棧 (快照追蹤)
     function pushHistory() {
       const snap = JSON.stringify(appState);
       if (historyIdx < historyStack.length - 1) {
@@ -1270,14 +1268,12 @@
       renderDriveData();
     }
 
-    // 主題色更換
     function switchTheme(themeName, record = true) {
       document.body.className = `theme-${themeName}`;
       appState.theme = themeName;
       if (record) saveLocalStorage();
     }
 
-    // 分頁更換 (鎖定最後停留分頁)
     function switchTab(tabName, record = true) {
       appState.currentTab = tabName;
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -1290,7 +1286,6 @@
       if (record) saveLocalStorage();
     }
 
-    // 匯率計算
     function calcExchange(type) {
       const rate = 0.0515;
       const jpyInput = document.getElementById('input-jpy');
